@@ -14,7 +14,7 @@ error_margin = 1e-3
 
 
 class RouletteBet():
-    def _init_(self, identifier: str, values: Iterable[float], payout: float):
+    def __init__(self, identifier: str, values: Iterable[float], payout: float):
         self.identifier = identifier
         self.values = values
         self.payout = payout
