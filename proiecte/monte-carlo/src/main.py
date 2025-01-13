@@ -9,11 +9,12 @@ from collections.abc import Iterable
 
 error_margin = 1e-3
 
+
 # Roulette base class
 
 
 class RouletteBet():
-    def __init__(self, identifier: str, values: Iterable[float], payout: float):
+    def _init_(self, identifier: str, values: Iterable[float], payout: float):
         self.identifier = identifier
         self.values = values
         self.payout = payout
@@ -31,7 +32,8 @@ class Roulette():
 
     SINGLE_BETS = [RouletteBet(f"straight_{index}", [index], 36) for index in range(ALL_VALUES_COUNT)]
 
-    ROW_BETS = [RouletteBet(f"row_{index + 1}", [index * 3 + 1, index * 3 + 2, index * 3 + 3], 12) for index in range(12)]
+    ROW_BETS = [RouletteBet(f"row_{index + 1}", [index * 3 + 1, index * 3 + 2, index * 3 + 3], 12) for index in
+                range(12)]
 
     FIRST_COLUMN_BET = RouletteBet('column_1', range(1, ALL_VALUES_COUNT, 3), 3)
     SECOND_COLUMN_BET = RouletteBet('column_2', range(2, ALL_VALUES_COUNT, 3), 3)
@@ -85,7 +87,8 @@ def evaluate_number_against_probability_distribution(value: float, probability_d
 
 
 def get_expected_probability_for_strategies(betting_strategies: Iterable[RouletteBet]):
-    return sum([betting_strategy.get_expected_probability() for betting_strategy in betting_strategies]) / len(betting_strategies)
+    return sum([betting_strategy.get_expected_probability() for betting_strategy in betting_strategies]) / len(
+        betting_strategies)
 
 
 # Generate probability distribution data
@@ -95,7 +98,8 @@ def generate_roulette_probability_distribution_data():
 
     usable_data = [[float(1 / Roulette.ALL_VALUES_COUNT) for _index in range(Roulette.ALL_VALUES_COUNT)]]
 
-    distributions_raw_data = [['Roulette value', 'Correct probability'] + [f"Fixed probability {index + 1}" for index in range(len(distribution_params))]]
+    distributions_raw_data = [['Roulette value', 'Correct probability'] + [f"Fixed probability {index + 1}" for index in
+                                                                           range(len(distribution_params))]]
     distributions_raw_data += [[] for _index in range(Roulette.ALL_VALUES_COUNT)]
 
     for index in range(Roulette.ALL_VALUES_COUNT):
@@ -123,15 +127,13 @@ def generate_roulette_probability_distribution_data():
 
     return usable_data
 
+
 # Distribution plot generation
 
 
-def generate_probability_distribution_plot(index: int, value_count: int, probability_distribution: Iterable[float]):
+def generate_probability_distribution_plot(index: int, probability_distribution: Iterable[float]):
     xpoints = [value for value in range(Roulette.ALL_VALUES_COUNT)]
-    ypoints = [0 for _value in range(Roulette.ALL_VALUES_COUNT)]
-    for _value_index in range(value_count):
-        value = np.random.rand()
-        ypoints[evaluate_number_against_probability_distribution(value, probability_distribution)] += 1
+    ypoints = probability_distribution
 
     plt.rcParams["figure.figsize"] = [20, 5]
     plt.rcParams["figure.autolayout"] = True
@@ -140,10 +142,13 @@ def generate_probability_distribution_plot(index: int, value_count: int, probabi
     plt.savefig(f"../img/probability-distribution-{index}")
     plt.clf()
 
+
 # Monte Carlo simulation
 
 
-def simulate_roulette_game(sample_size: int, betting_strategies: Iterable[RouletteBet], probability_distribution: Iterable[float], results: Iterable, row_index: int, column_index: int):
+def simulate_roulette_game(distribution_data_index: int, sample_size: int, betting_strategies_name: str,
+                           betting_strategies: Iterable[RouletteBet], probability_distribution: Iterable[float],
+                           results: Iterable, row_index: int, column_index: int):
     favorable_outcomes = 0
     for _sample_index in range(sample_size):
         betting_strategy = np.random.choice(betting_strategies)
@@ -151,18 +156,24 @@ def simulate_roulette_game(sample_size: int, betting_strategies: Iterable[Roulet
         roulette_value = evaluate_number_against_probability_distribution(sample_value, probability_distribution)
         if betting_strategy.evaluate_action(roulette_value):
             favorable_outcomes += 1
-    results[row_index][column_index] = float(favorable_outcomes / sample_size)
+    results[distribution_data_index][row_index][column_index] = float(favorable_outcomes / sample_size)
 
     # Chebyshev
     expected_probability = get_expected_probability_for_strategies(betting_strategies)
-    results[row_index][column_index + 1] = (expected_probability * (1 - expected_probability)) / (error_margin * sample_size)
+    results[distribution_data_index][row_index][column_index + 1] = (expected_probability * (
+            1 - expected_probability)) / (
+                                                                            error_margin * sample_size)
 
     # Chernoff
     exponent = float((-2) * sample_size * (error_margin ** 2))
-    results[row_index][column_index + 2] = 2 * math.exp(exponent)
+    results[distribution_data_index][row_index][column_index + 2] = 2 * math.exp(exponent)
+
+    print(
+        f"Finished Monte Carlo simulation for distribution {distribution_data_index + 1} - {sample_size} values - {betting_strategies_name} strategy")
 
 
-def initialize_simulation_report_data(sample_sizes: Iterable[int], betting_strategies_list: Iterable, inequalities: Iterable[str]):
+def initialize_simulation_report_data(sample_sizes: Iterable[int], betting_strategies_list: Iterable,
+                                      inequalities: Iterable[str]):
     report_data = [['Sample size'], ['Expected']]
     for strategy_name, betting_strategies in betting_strategies_list.items():
         report_data[0].append(strategy_name)
@@ -183,14 +194,13 @@ def initialize_simulation_report_data(sample_sizes: Iterable[int], betting_strat
 print("Generating distributions!")
 distributions_data = generate_roulette_probability_distribution_data()
 
-DISTRIBUTION_PLOT_SAMPLE_SIZE = int(1e6)
-
 print("Generating distribution plots!")
 for distribution_data_index in range(len(distributions_data)):
-    generate_probability_distribution_plot(distribution_data_index + 1, DISTRIBUTION_PLOT_SAMPLE_SIZE, distributions_data[distribution_data_index])
+    generate_probability_distribution_plot(distribution_data_index + 1,
+                                           distributions_data[distribution_data_index])
 
-
-sample_sizes = [1000 * index for index in range(1, 101)]
+sample_unit = 1000
+sample_sizes = [sample_unit * index for index in range(1, 51)]
 betting_strategies_list = {
     'Single': Roulette.SINGLE_BETS,
     'Row': Roulette.ROW_BETS,
@@ -203,37 +213,80 @@ betting_strategies_list = {
 }
 
 print("Starting Monte Carlo simulation!")
-for distribution_data_index, distribution_data in enumerate(distributions_data):
-    inequalities = ['Chebyshev', 'Chernoff']
-    distribution_report_data = initialize_simulation_report_data(sample_sizes, betting_strategies_list, inequalities)
-    distribution_report_data_inequalities = len(inequalities)
-    distribution_report_data_header_size = 2
-    threads = [[None] * (len(betting_strategies_list) + 1)] * (len(sample_sizes) + 1)
 
+threads = [[[None] * (len(betting_strategies_list) + 1)] * (len(sample_sizes) + 1)] * len(distributions_data)
+distribution_report_data = []
+distribution_report_data_inequalities = ['Chebyshev', 'Chernoff']
+distribution_report_data_inequalities_count = len(distribution_report_data_inequalities)
+distribution_report_data_header_size = 2
+
+for distribution_data_index, distribution_data in enumerate(distributions_data):
+    distribution_report_data.append(
+        initialize_simulation_report_data(sample_sizes, betting_strategies_list, distribution_report_data_inequalities))
     for sample_size_index, sample_size in enumerate(sample_sizes):
         betting_strategies_index = 0
         for betting_strategies_name, betting_strategies in betting_strategies_list.items():
-            print(f"Starting Monte Carlo simulation for distribution {distribution_data_index + 1} - {sample_size} values - {betting_strategies_name} strategy")
-            threads[sample_size_index][betting_strategies_index] = Thread(
+            threads[distribution_data_index][sample_size_index][betting_strategies_index] = Thread(
                 target=simulate_roulette_game,
                 args=(
+                    distribution_data_index,
                     sample_size,
+                    betting_strategies_name,
                     betting_strategies,
                     distribution_data,
                     distribution_report_data,
                     sample_size_index + distribution_report_data_header_size,
-                    betting_strategies_index * (distribution_report_data_inequalities + 1) + 1
+                    betting_strategies_index * (distribution_report_data_inequalities_count + 1) + 1
                 )
             )
-            threads[sample_size_index][betting_strategies_index].start()
+            threads[distribution_data_index][sample_size_index][betting_strategies_index].start()
             betting_strategies_index += 1
 
+for distribution_data_index, distribution_data in enumerate(distributions_data):
     for sample_size_index, sample_size in enumerate(sample_sizes):
         betting_strategies_index = 0
         for betting_strategies_name, betting_strategies in betting_strategies_list.items():
-            threads[sample_size_index][betting_strategies_index].join()
+            threads[distribution_data_index][sample_size_index][betting_strategies_index].join()
             betting_strategies_index += 1
 
     distribution_report_file = open(f"../data/distribution-{distribution_data_index + 1}-report.csv", "w", newline='')
     distribution_report_file_writer = csv.writer(distribution_report_file, delimiter=',')
-    distribution_report_file_writer.writerows(distribution_report_data)
+    distribution_report_file_writer.writerows(distribution_report_data[distribution_data_index])
+
+    plt.rcParams["figure.figsize"] = [25, 5]
+    plt.rcParams["figure.autolayout"] = True
+
+    probabilities = np.empty((len(betting_strategies_list), len(sample_sizes)))
+    for betting_strategies_index, betting_strategies in enumerate(betting_strategies_list.items()):
+        for sample_size_index, sample_size in enumerate(sample_sizes):
+            probabilities[betting_strategies_index][sample_size_index] = \
+                distribution_report_data[distribution_data_index][
+                    sample_size_index + distribution_report_data_header_size][
+                    betting_strategies_index * (distribution_report_data_inequalities_count + 1) + 1]
+
+    graph_data_list = [(
+        [probabilities[0]], [1 / 37], 'single'
+    ), (
+        [probabilities[1]], [3 / 37], 'three'
+    ), (
+        [probabilities[7]], [get_expected_probability_for_strategies(Roulette.ALL_BETS)], 'all'
+    ), (
+        [probabilities[2], probabilities[3]], [12 / 37], 'twelve'
+    ), (
+        [probabilities[4], probabilities[5], probabilities[6]], [18 / 37], 'eighteen'
+    ), (
+        probabilities, [1 / 37, 3 / 37, get_expected_probability_for_strategies(Roulette.ALL_BETS), 12 / 37, 18 / 37],
+        'total'
+    )]
+
+    for graph_data in graph_data_list:
+        for probability in graph_data[0]:
+            plt.plot(np.array(sample_sizes), np.array(probability), marker='o')
+
+        for horizontal_line in graph_data[1]:
+            plt.axhline(y=horizontal_line, color='r', linestyle='-')
+
+        plt.grid(True)
+        plt.xticks(sample_sizes, [str(math.floor(sample_size / sample_unit)) for sample_size in sample_sizes])
+        plt.savefig(f"../img/monte-carlo-simulation-{distribution_data_index + 1}-{graph_data[2]}")
+        plt.clf()
