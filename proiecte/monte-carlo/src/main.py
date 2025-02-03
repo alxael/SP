@@ -9,9 +9,7 @@ from collections.abc import Iterable
 
 error_margin = 1e-3
 
-
 # Roulette base class
-
 
 class RouletteBet():
     def __init__(self, identifier: str, values: Iterable[float], payout: float):
@@ -24,7 +22,6 @@ class RouletteBet():
 
     def get_expected_probability(self):
         return float(len(self.values) / 37)
-
 
 class Roulette():
     ALL_VALUES_COUNT = 37
